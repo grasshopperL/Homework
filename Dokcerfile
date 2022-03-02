@@ -1,26 +1,31 @@
-# build stage
-FROM golang:1.14 as builder
+# syntax=docker/dockerfile:1
 
-# use go module
-ENV GO111MODULE=on \
-    GOPROXY=https://goproxy.cn,direct
-
-WORKDIR /app
-
-COPY . .
-
-# go build
-RUN GOOS=linux GOARCH=amd64 go build -o ./bin
-
-# run stage
-FROM alpine
+##
+## Build
+##
+FROM golang:1.16-buster AS build
 
 WORKDIR /app
 
-# use bin
-COPY --from=build /app/bin .
+COPY go.mod ./
+COPY go.sum ./
+RUN go mod download
 
-# expose port
+COPY *.go ./
+
+RUN go build -o /homework
+
+##
+## Deploy
+##
+FROM gcr.io/distroless/base-debian10
+
+WORKDIR /
+
+COPY --from=build /homework /homework
+
 EXPOSE 8888
 
-ENTRYPOINT ["./bin/homework"]
+USER nonroot:nonroot
+
+ENTRYPOINT ["/homework"]
