@@ -1,0 +1,26 @@
+# build stage
+FROM golang:1.14 as builder
+
+# use go module
+ENV GO111MODULE=on \
+    GOPROXY=https://goproxy.cn,direct
+
+WORKDIR /app
+
+COPY . .
+
+# go build
+RUN GOOS=linux GOARCH=amd64 go build -o ./bin
+
+# run stage
+FROM alpine
+
+WORKDIR /app
+
+# use bin
+COPY --from=build /app/bin .
+
+# expose port
+EXPOSE 8888
+
+ENTRYPOINT ["./bin/homework"]
